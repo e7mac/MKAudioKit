@@ -15,9 +15,10 @@ Pod::Spec.new do |s|
   # s.resources = 'Assets/**/*'
 
   s.subspec 'Audiobus' do |audiobus|
-      audiobus.source_files = 'libraries/audiobus/1.0.2.5/include/*.h'
-      audiobus.vendored_libraries = 'libraries/audiobus/1.0.2.5/lib/libAudiobus.a'
-      audiobus.xcconfig = { 'HEADER_SEARCH_PATHS' => "${PODS_ROOT}/#{s.name}/libraries/audiobus/1.0.2.5/include/**" }
+      version = '1.0.2.5'
+      audiobus.source_files = 'libraries/audiobus/' + version + '/include/*.h'
+      audiobus.vendored_libraries = 'libraries/audiobus/' + version + '/lib/libAudiobus.a'
+      audiobus.xcconfig = { 'HEADER_SEARCH_PATHS' => "${PODS_ROOT}/libraries/audiobus/' + version + '/include/**" }
   end
 
 end
