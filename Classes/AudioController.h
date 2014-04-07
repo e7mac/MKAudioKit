@@ -18,14 +18,14 @@ typedef struct {
     BOOL audioSetupDone;
     BOOL hasFilterPort;
     __block void (^processBlock)(AudioBufferList* ioData, UInt32 inNumberFrames, AudioTimeStamp *timestamp);
-} EffectState;
+} AudioState;
 
 @interface AudioController: NSObject
 
 + (id)sharedInstance;
 
 @property (assign, nonatomic) Float64 hardwareSampleRate;
-@property (nonatomic) EffectState effectState;
+@property (nonatomic) AudioState audioState;
 @property (nonatomic)  BOOL running;
 @property (strong, nonatomic) ABAudiobusController *audiobusController;
 @property (strong, nonatomic) ABAudiobusAudioUnitWrapper *audiobusAudioUnitWrapper;

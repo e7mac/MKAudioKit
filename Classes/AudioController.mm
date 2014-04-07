@@ -37,7 +37,7 @@ void MyInterruptionListener (void *inUserData,
         {
 			CheckError(AudioSessionSetActive(true),
 					   "Couldn't set audio session active");
-			CheckError (AudioOutputUnitStart (audioController.effectState.rioUnit),
+			CheckError (AudioOutputUnitStart (audioController.audioState.rioUnit),
 						"Couldn't start RIO unit");
             UInt32 allowMixing = YES;
             AudioSessionSetProperty(kAudioSessionProperty_OverrideCategoryMixWithOthers, sizeof (allowMixing), &allowMixing);
@@ -103,13 +103,13 @@ OSStatus GranularSynthRenderCallback (
                                       UInt32							inBusNumber,
                                       UInt32							inNumberFrames,
                                       AudioBufferList *				ioData) {
-	EffectState *effectState = (EffectState*) inRefCon;
+	AudioState *audioState = (AudioState*) inRefCon;
     
-    if (!effectState->audioSetupDone)
+    if (!audioState->audioSetupDone)
         return noErr;
 	// just copy samples
 	UInt32 bus1 = 1;
-	CheckError(AudioUnitRender(effectState->rioUnit,
+	CheckError(AudioUnitRender(audioState->rioUnit,
                                ioActionFlags,
                                inTimeStamp,
                                bus1,
@@ -117,15 +117,15 @@ OSStatus GranularSynthRenderCallback (
                                ioData),
 			   "Couldn't render from RemoteIO unit");
 	// walk the samples
-    if ( effectState->hasFilterPort ) {
-        if ( ABFilterPortIsConnected(effectState->filterPort)) {
+    if ( audioState->hasFilterPort ) {
+        if ( ABFilterPortIsConnected(audioState->filterPort)) {
             // Pull output audio from the filter port
             // Note: The following line isn't necessary if you're using the Audio Unit Wrapper - it'll do this for you.
-            ABFilterPortGetOutput(effectState->filterPort, ioData, inNumberFrames, NULL);
+            ABFilterPortGetOutput(audioState->filterPort, ioData, inNumberFrames, NULL);
             return noErr;
         }
     }
-    effectState->processBlock(ioData, inNumberFrames, NULL);
+    audioState->processBlock(ioData, inNumberFrames, NULL);
 	return noErr;
 }
 
@@ -168,16 +168,16 @@ static NSMutableDictionary* instances = nil;
     typeof(self) weakSelf = self;
     processBlock = ^(AudioBufferList* ioData, UInt32 inNumberFrames, AudioTimeStamp *timestamp) {
         // Filter the audio...
-        audioBlock(ioData,inNumberFrames,timestamp,weakSelf.effectState.asbd);
+        audioBlock(ioData,inNumberFrames,timestamp,weakSelf.audioState.asbd);
         
     };
-    _effectState.processBlock = processBlock;
+    _audioState.processBlock = processBlock;
 }
 
 
 -(void)start {
     if(!_running) {
-        CheckError (AudioOutputUnitStart (_effectState.rioUnit),
+        CheckError (AudioOutputUnitStart (_audioState.rioUnit),
                     "couldn't start RIO unit");
         _running = YES;
     }
@@ -185,7 +185,7 @@ static NSMutableDictionary* instances = nil;
 
 -(void)stop {
     if(_running) {
-        CheckError (AudioOutputUnitStop (_effectState.rioUnit),
+        CheckError (AudioOutputUnitStop (_audioState.rioUnit),
                     "couldn't stop RIO unit");
         _running = NO;
     }
@@ -291,13 +291,13 @@ static NSMutableDictionary* instances = nil;
     
     // get rio unit from audio component manager
     AudioComponent rioComponent = AudioComponentFindNext(NULL, &audioCompDesc);
-    CheckError(AudioComponentInstanceNew(rioComponent, &_effectState.rioUnit),
+    CheckError(AudioComponentInstanceNew(rioComponent, &_audioState.rioUnit),
                "Couldn't get RIO unit instance");
     
     // set up the rio unit for playback
     UInt32 oneFlag = 1;
     AudioUnitElement bus0 = 0;
-    CheckError(AudioUnitSetProperty (_effectState.rioUnit,
+    CheckError(AudioUnitSetProperty (_audioState.rioUnit,
                                      kAudioOutputUnitProperty_EnableIO,
                                      kAudioUnitScope_Output,
                                      bus0,
@@ -307,7 +307,7 @@ static NSMutableDictionary* instances = nil;
     
     // enable rio input
     AudioUnitElement bus1 = 1;
-    CheckError(AudioUnitSetProperty(_effectState.rioUnit,
+    CheckError(AudioUnitSetProperty(_audioState.rioUnit,
                                     kAudioOutputUnitProperty_EnableIO,
                                     kAudioUnitScope_Input,
                                     bus1,
@@ -331,7 +331,7 @@ static NSMutableDictionary* instances = nil;
     /*
      // set format for output (bus 0) on rio's input scope
      */
-    CheckError(AudioUnitSetProperty (_effectState.rioUnit,
+    CheckError(AudioUnitSetProperty (_audioState.rioUnit,
                                      kAudioUnitProperty_StreamFormat,
                                      kAudioUnitScope_Input,
                                      bus0,
@@ -341,7 +341,7 @@ static NSMutableDictionary* instances = nil;
     
     
     // set asbd for mic input
-    CheckError(AudioUnitSetProperty (_effectState.rioUnit,
+    CheckError(AudioUnitSetProperty (_audioState.rioUnit,
                                      kAudioUnitProperty_StreamFormat,
                                      kAudioUnitScope_Output,
                                      bus1,
@@ -349,14 +349,14 @@ static NSMutableDictionary* instances = nil;
                                      sizeof (myASBD)),
                "Couldn't set ASBD for RIO on output scope / bus 1");
     
-    _effectState.asbd = myASBD;
+    _audioState.asbd = myASBD;
     
     // set callback method
     AURenderCallbackStruct callbackStruct;
     callbackStruct.inputProc = GranularSynthRenderCallback; // callback function
-    callbackStruct.inputProcRefCon = &_effectState;
+    callbackStruct.inputProcRefCon = &_audioState;
     
-    CheckError(AudioUnitSetProperty(_effectState.rioUnit,
+    CheckError(AudioUnitSetProperty(_audioState.rioUnit,
                                     kAudioUnitProperty_SetRenderCallback,
                                     kAudioUnitScope_Global,
                                     bus0,
@@ -364,7 +364,7 @@ static NSMutableDictionary* instances = nil;
                                     sizeof (callbackStruct)),
                "Couldn't set RIO render callback on bus 0");
     // initialize and start remoteio unit
-    CheckError(AudioUnitInitialize(_effectState.rioUnit),
+    CheckError(AudioUnitInitialize(_audioState.rioUnit),
                "Couldn't initialize RIO unit");
     [self start];
 }
@@ -373,7 +373,7 @@ static NSMutableDictionary* instances = nil;
 
 -(void)setupDone
 {
-    _effectState.audioSetupDone = YES;
+    _audioState.audioSetupDone = YES;
 }
 
 #pragma mark Audiobus things
@@ -385,7 +385,7 @@ static NSMutableDictionary* instances = nil;
     
     self.audiobusAudioUnitWrapper = [[ABAudiobusAudioUnitWrapper alloc]
                                      initWithAudiobusController:self.audiobusController
-                                     audioUnit:self.effectState.rioUnit
+                                     audioUnit:self.audioState.rioUnit
                                      output:[self.audiobusController addOutputPortNamed:@"Audio Output"
                                                                                   title:NSLocalizedString(@"Main App Output", @"")]
                                      input:nil];
@@ -393,13 +393,13 @@ static NSMutableDictionary* instances = nil;
     UInt32 allowMixing = YES;
     AudioSessionSetProperty(kAudioSessionProperty_OverrideCategoryMixWithOthers, sizeof (allowMixing), &allowMixing);
     
-    _effectState.hasFilterPort = hasFilterPort;
+    _audioState.hasFilterPort = hasFilterPort;
     if (hasFilterPort) {
         // In app initialisation...
-        _effectState.filterPort = [_audiobusController addFilterPortNamed:@"Main"
+        _audioState.filterPort = [_audiobusController addFilterPortNamed:@"Main"
                                                                     title:@"Main Filter"
                                                              processBlock:processBlock];
-        _effectState.filterPort.clientFormat = self.effectState.asbd;
+        _audioState.filterPort.clientFormat = self.audioState.asbd;
     }
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(connectionsChanged:) name:ABConnectionsChangedNotification object:nil];
