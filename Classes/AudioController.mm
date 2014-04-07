@@ -7,7 +7,6 @@
 //
 
 #import "AudioController.h"
-#import "GranularSynthesizer.h"
 
 void CheckError(OSStatus error, const char *operation)
 {

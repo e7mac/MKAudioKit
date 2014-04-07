@@ -11,7 +11,13 @@ Pod::Spec.new do |s|
   s.platform     = :ios, '5.0'
   s.requires_arc = true
 
-  s.source_files = 'Classes/*'
+  s.source_files = 'Classes/**/*'
   # s.resources = 'Assets/**/*'
+
+  s.subspec 'Audiobus' do |audiobus|
+      audiobus.source_files = 'libraries/audiobus/include/*.h'
+      audiobus.vendored_libraries = 'libraries/audiobus/lib/libAudiobus.a'
+      audiobus.xcconfig = { 'HEADER_SEARCH_PATHS' => "${PODS_ROOT}/#{s.name}/libraries/audiobus/include/**" }
+  end
 
 end
