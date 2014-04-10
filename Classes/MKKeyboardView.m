@@ -1,14 +1,14 @@
 //
-//  KeyboardView.m
+//  MKKeyboardView.m
 //  GrainProc
 //
 //  Created by Mayank on 3/16/14.
 //  Copyright (c) 2014 Mayank, Kurt. All rights reserved.
 //
 
-#import "KeyboardView.h"
+#import "MKKeyboardView.h"
 
-@implementation KeyboardView
+@implementation MKKeyboardView
 
 - (id)initWithFrame:(CGRect)frame
 {
@@ -115,8 +115,8 @@
     UITouch *touch = [touches anyObject];
     float pitch = [self pitchForTouch:touch event:event];
     float y = [self yParamForTouch:touch event:event];
-    if ([self.delegate respondsToSelector:@selector(keyboardTouchBegan:pitch:yParam:)]) {
-        [self.delegate keyboardTouchBegan:touch pitch:pitch yParam:y];
+    if ([self.delegate respondsToSelector:@selector(keyboardViewTouchBegan:pitch:yParam:)]) {
+        [self.delegate keyboardViewTouchBegan:touch pitch:pitch yParam:y];
     }
 }
 
@@ -125,8 +125,8 @@
     UITouch *touch = [touches anyObject];
     float pitch = [self pitchForTouch:touch event:event];
     float y = [self yParamForTouch:touch event:event];
-    if ([self.delegate respondsToSelector:@selector(keyboardTouchMoved:pitch:yParam:)]) {
-        [self.delegate keyboardTouchMoved:touch pitch:pitch yParam:y];
+    if ([self.delegate respondsToSelector:@selector(keyboardViewTouchMoved:pitch:yParam:)]) {
+        [self.delegate keyboardViewTouchMoved:touch pitch:pitch yParam:y];
     }
 }
 
@@ -135,8 +135,8 @@
     UITouch *touch = [touches anyObject];
     float pitch = [self pitchForTouch:touch event:event];
     float y = [self yParamForTouch:touch event:event];
-    if ([self.delegate respondsToSelector:@selector(keyboardTouchCancelled:pitch:yParam:)]) {
-        [self.delegate keyboardTouchCancelled:touch pitch:pitch yParam:y];
+    if ([self.delegate respondsToSelector:@selector(keyboardViewTouchCancelled:pitch:yParam:)]) {
+        [self.delegate keyboardViewTouchCancelled:touch pitch:pitch yParam:y];
     }
 }
 
@@ -145,8 +145,8 @@
     UITouch *touch = [touches anyObject];
     float pitch = [self pitchForTouch:touch event:event];
     float y = [self yParamForTouch:touch event:event];
-    if ([self.delegate respondsToSelector:@selector(keyboardTouchEnded:pitch:yParam:)]) {
-        [self.delegate keyboardTouchEnded:touch pitch:pitch yParam:y];
+    if ([self.delegate respondsToSelector:@selector(keyboardViewTouchEnded:pitch:yParam:)]) {
+        [self.delegate keyboardViewTouchEnded:touch pitch:pitch yParam:y];
     }
 }
 
