@@ -28,6 +28,10 @@
     return self;
 }
 
+-(void)layoutSubviews
+{
+    [self constructKeyboardView];
+}
 
 -(void)commonInit
 {
@@ -35,7 +39,6 @@
     self.startPitch = 60;
     self.numPitches = 12;
     self.continousMode = YES;
-    [self constructKeyboardView];
 }
 
 -(void)setStartPitch:(int)startPitch
