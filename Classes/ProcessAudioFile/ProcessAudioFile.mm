@@ -1,23 +1,20 @@
 #import "ProcessAudioFile.h"
 
 @interface ProcessAudioFile()
-{
-    NSString *_destinationFilePath;
-    NSURL *_sourceURL;
-    NSURL *_destinationURL;
-    void (^_filterBlock)(AudioSampleType& sample);
-}
+
+@property (strong, nonatomic) NSURL *sourceURL;
+@property (strong, nonatomic) NSURL *destinationURL;
+@property (strong, nonatomic) void (^filterBlock)(AudioSampleType& sample);
+
 @end
 
 @implementation ProcessAudioFile
 
 -(void)convertSource:(NSURL *)source destination:(NSURL *)destination  filterBlock:(void (^)(AudioSampleType &sample))filterBlock
 {
-    _sourceURL = source;
-    _destinationURL = destination;
-//    _sourceURL = (__bridge CFURLRef)source;
-//    _destinationURL = (__bridge CFURLRef)destination;
-    _filterBlock = filterBlock;
+    self.sourceURL = source;
+    self.destinationURL = destination;
+    self.filterBlock = filterBlock;
     //TODO: efficiency?
     [self convertAudio];
 }
@@ -26,11 +23,13 @@
 
 - (void)convertAudio
 {
-    OSStatus error = [self doConvertFileSource:(__bridge CFURLRef)_sourceURL destination:(__bridge CFURLRef)_destinationURL outputFormat:kAudioFormatMPEG4AAC sampleRate:0];
+    OSStatus error = [self doConvertFileSource:(__bridge CFURLRef)self.sourceURL destination:(__bridge CFURLRef)self.destinationURL outputFormat:kAudioFormatMPEG4AAC sampleRate:0];
     if (error) {
+        //TODO: get path from URL
+        NSString *destinationFilePath;
         // delete output file if it exists since an error was returned during the conversion process
-        if ([[NSFileManager defaultManager] fileExistsAtPath:_destinationFilePath]) {
-            [[NSFileManager defaultManager] removeItemAtPath:_destinationFilePath error:nil];
+        if ([[NSFileManager defaultManager] fileExistsAtPath:destinationFilePath]) {
+            [[NSFileManager defaultManager] removeItemAtPath:destinationFilePath error:nil];
         }
         printf("DoConvertFile failed! %ld\n", error);
     } else {
@@ -192,7 +191,7 @@
                         //                        NSLog(@"%i", sample);
 //                        static int t=0;
 //                        sample *= sinf(0.6*t++);// * sampleFloat * 32767;
-                        _filterBlock(sample);
+                        self.filterBlock(sample);
                         //copy sample back
                         memcpy((char *)buf.mData + (currentFrame * clientFormat.mBytesPerFrame),
                                &sample,
