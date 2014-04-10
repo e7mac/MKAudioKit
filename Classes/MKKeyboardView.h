@@ -20,7 +20,7 @@
 
 @interface MKKeyboardView : UIView
 
-@property (weak, nonatomic) id<KeyboardViewDelegate> delegate;
+@property (weak, nonatomic) id<MKKeyboardViewDelegate> delegate;
 @property (assign, nonatomic) int startPitch;
 @property (assign, nonatomic) int numPitches;
 @property (assign, nonatomic) BOOL continousMode;
