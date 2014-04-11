@@ -9,6 +9,12 @@
 #import "MKKeyboardView.h"
 #import <QuartzCore/QuartzCore.h>
 
+@interface MKKeyboardView()
+
+@property (strong, nonatomic) NSMutableDictionary *pitchForTouch;
+
+@end
+
 @implementation MKKeyboardView
 
 - (id)initWithFrame:(CGRect)frame
@@ -29,6 +35,14 @@
     return self;
 }
 
+- (NSMutableDictionary *)pitchForTouch
+{
+    if (_pitchForTouch == nil)
+    {
+        _pitchForTouch = [[NSMutableDictionary alloc] init];
+    }
+    return _pitchForTouch;
+}
 -(void)layoutSubviews
 {
     [self constructKeyboardView];
@@ -132,6 +146,7 @@
 }
 -(void)releasedKeyWithPitch:(int)pitch
 {
+    NSLog(@"release %i", pitch);
     UIView *view = [self viewWithTag:pitch];
     if ([self blackKeyForPitch:pitch]) {
         view.layer.shadowRadius = 2;
@@ -151,6 +166,7 @@
     if ([self.delegate respondsToSelector:@selector(keyboardViewTouchBegan:pitch:yParam:)]) {
         [self.delegate keyboardViewTouchBegan:touch pitch:pitch yParam:y];
     }
+    [self.pitchForTouch setObject:[NSNumber numberWithInt:(int)pitch] forKey:[NSValue valueWithPointer:(__bridge const void *)(touch)]];
     [self pressedKeyWithPitch:pitch];
 }
 
@@ -162,7 +178,13 @@
     if ([self.delegate respondsToSelector:@selector(keyboardViewTouchMoved:pitch:yParam:)]) {
         [self.delegate keyboardViewTouchMoved:touch pitch:pitch yParam:y];
     }
-    [self pressedKeyWithPitch:pitch];
+
+    int prevPitch = [[self.pitchForTouch objectForKey:[NSValue valueWithPointer:(__bridge const void *)(touch)]] intValue];
+    if (pitch != prevPitch) {
+        [self releasedKeyWithPitch:prevPitch];
+        [self.pitchForTouch setObject:[NSNumber numberWithInt:(int)pitch] forKey:[NSValue valueWithPointer:(__bridge const void *)(touch)]];
+        [self pressedKeyWithPitch:pitch];
+    }
 }
 
 -(void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event
@@ -173,6 +195,7 @@
     if ([self.delegate respondsToSelector:@selector(keyboardViewTouchCancelled:pitch:yParam:)]) {
         [self.delegate keyboardViewTouchCancelled:touch pitch:pitch yParam:y];
     }
+    [self touchesEnded:touches withEvent:event];
 }
 
 -(void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
@@ -183,6 +206,7 @@
     if ([self.delegate respondsToSelector:@selector(keyboardViewTouchEnded:pitch:yParam:)]) {
         [self.delegate keyboardViewTouchEnded:touch pitch:pitch yParam:y];
     }
+    [self.pitchForTouch removeObjectForKey:[NSValue valueWithPointer:(__bridge const void *)(touch)]];
     [self releasedKeyWithPitch:pitch];
 }
 
