@@ -7,6 +7,7 @@
 //
 
 #import "MKKeyboardView.h"
+#import <QuartzCore/QuartzCore.h>
 
 @implementation MKKeyboardView
 
@@ -64,23 +65,32 @@
     }
     CGFloat whiteKeyWidth = self.bounds.size.width / whiteKeys;
     CGFloat blackKeyWidth = 0.5 * whiteKeyWidth;
+    CGFloat blackKeyHeight = self.bounds.size.height*0.6;
     CGFloat startX = 0;
     for (int i=0; i<self.numPitches; i++) {
         int currentPitch = self.startPitch + i;
         UIView *view = [[UIView alloc] init];
         view.tag = currentPitch;
+        view.layer.masksToBounds = NO;
+        view.layer.shadowOffset = CGSizeZero;
         if (![self blackKeyForPitch:currentPitch]) {
             //add white key
             view.frame = CGRectMake(startX, 0, whiteKeyWidth, self.bounds.size.height);
+            view.layer.cornerRadius = whiteKeyWidth/8;
             [self insertSubview:view atIndex:0];
             startX += whiteKeyWidth;
         } else {
             //add black key
-            view.frame = CGRectMake(startX - (0.25)*whiteKeyWidth, 0, blackKeyWidth, self.bounds.size.height*0.6);
+            view.frame = CGRectMake(startX - (0.25)*whiteKeyWidth, 0, blackKeyWidth, blackKeyHeight);
+            view.layer.cornerRadius = blackKeyWidth/4;
+            view.layer.shadowRadius = 2;
+            view.layer.shadowRadius = 7;
+            view.layer.shadowOpacity = 0.75;
             [self addSubview:view];
             view.backgroundColor = [UIColor blackColor];
         }
         view.tag = currentPitch;
+        [self releasedKeyWithPitch:currentPitch];
         view.layer.borderColor = [[UIColor blackColor] CGColor];
         view.layer.borderWidth = 2;
     }
@@ -110,6 +120,29 @@
     }
 }
 
+-(void)pressedKeyWithPitch:(int)pitch
+{
+    UIView *view = [self viewWithTag:pitch];
+    if ([self blackKeyForPitch:pitch]) {
+        view.layer.shadowRadius = 2;
+    } else {
+        view.layer.shadowRadius = 10;
+        view.layer.shadowOpacity = 1;
+    }
+}
+-(void)releasedKeyWithPitch:(int)pitch
+{
+    UIView *view = [self viewWithTag:pitch];
+    if ([self blackKeyForPitch:pitch]) {
+        view.layer.shadowRadius = 2;
+        view.layer.shadowRadius = 7;
+        view.layer.shadowOpacity = 0.75;
+    } else {
+        view.layer.shadowRadius = 5;
+        view.layer.shadowOpacity = 0.5;
+    }
+}
+
 -(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
     UITouch *touch = [touches anyObject];
@@ -118,6 +151,7 @@
     if ([self.delegate respondsToSelector:@selector(keyboardViewTouchBegan:pitch:yParam:)]) {
         [self.delegate keyboardViewTouchBegan:touch pitch:pitch yParam:y];
     }
+    [self pressedKeyWithPitch:pitch];
 }
 
 -(void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
@@ -128,6 +162,7 @@
     if ([self.delegate respondsToSelector:@selector(keyboardViewTouchMoved:pitch:yParam:)]) {
         [self.delegate keyboardViewTouchMoved:touch pitch:pitch yParam:y];
     }
+    [self pressedKeyWithPitch:pitch];
 }
 
 -(void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event
@@ -148,6 +183,7 @@
     if ([self.delegate respondsToSelector:@selector(keyboardViewTouchEnded:pitch:yParam:)]) {
         [self.delegate keyboardViewTouchEnded:touch pitch:pitch yParam:y];
     }
+    [self releasedKeyWithPitch:pitch];
 }
 
 -(float)pitchForTouch:(UITouch *)touch event:(UIEvent *)event
