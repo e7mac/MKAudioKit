@@ -92,6 +92,7 @@
             view.frame = CGRectMake(startX, 0, whiteKeyWidth, self.bounds.size.height);
             view.layer.cornerRadius = whiteKeyWidth/8;
             [self insertSubview:view atIndex:0];
+            view.backgroundColor = [UIColor whiteColor];
             startX += whiteKeyWidth;
         } else {
             //add black key
