@@ -13,9 +13,7 @@ Pod::Spec.new do |s|
 
   s.source_files = 'Classes/**/*'
   # s.resources = 'Assets/**/*'
-  s.framework    = 'QuartzCore'
-  s.framework    = 'AudioToolbox'
-  s.framework    = 'Accelerate'
+  s.frameworks    = 'QuartzCore', 'AudioToolbox', 'Accelerate'
 
   s.subspec 'Audiobus' do |audiobus|
       version = '1.0.2.5'
