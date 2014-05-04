@@ -8,6 +8,7 @@
 
 #import "MKKeyboardView.h"
 #import <QuartzCore/QuartzCore.h>
+#import "MKWhiteKeyView.h"
 
 @interface MKKeyboardView()
 
@@ -54,6 +55,7 @@
     self.startPitch = 60;
     self.numPitches = 12;
     self.continousMode = YES;
+    self.backgroundColor = [UIColor blackColor];
 }
 
 -(void)setStartPitch:(int)startPitch
@@ -83,7 +85,7 @@
     CGFloat startX = 0;
     for (int i=0; i<self.numPitches; i++) {
         int currentPitch = self.startPitch + i;
-        UIView *view = [[UIView alloc] init];
+        MKWhiteKeyView *view = [[MKWhiteKeyView alloc] init];
         view.tag = currentPitch;
         view.layer.masksToBounds = NO;
         view.layer.shadowOffset = CGSizeZero;
@@ -94,6 +96,7 @@
             [self insertSubview:view atIndex:0];
             view.backgroundColor = [UIColor whiteColor];
             startX += whiteKeyWidth;
+            view.pressed = YES;
         } else {
             //add black key
             view.frame = CGRectMake(startX - (0.25)*whiteKeyWidth, 0, blackKeyWidth, blackKeyHeight);
@@ -137,25 +140,22 @@
 
 -(void)pressedKeyWithPitch:(int)pitch
 {
-    UIView *view = [self viewWithTag:pitch];
+    MKWhiteKeyView *view = (MKWhiteKeyView *)[self viewWithTag:pitch];
     if ([self blackKeyForPitch:pitch]) {
         view.layer.shadowRadius = 2;
     } else {
-        view.layer.shadowRadius = 10;
-        view.layer.shadowOpacity = 1;
+//        view.pressed = YES;
     }
 }
 -(void)releasedKeyWithPitch:(int)pitch
 {
-    NSLog(@"release %i", pitch);
-    UIView *view = [self viewWithTag:pitch];
+    MKWhiteKeyView *view = (MKWhiteKeyView *)[self viewWithTag:pitch];
     if ([self blackKeyForPitch:pitch]) {
         view.layer.shadowRadius = 2;
         view.layer.shadowRadius = 7;
         view.layer.shadowOpacity = 0.75;
     } else {
-        view.layer.shadowRadius = 5;
-        view.layer.shadowOpacity = 0.5;
+//        view.pressed = NO;
     }
 }
 
