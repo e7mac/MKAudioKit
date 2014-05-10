@@ -110,7 +110,7 @@
     view.tag = currentPitch;
     [self releasedKeyWithPitch:currentPitch];
     view.layer.borderColor = [[UIColor blackColor] CGColor];
-    view.layer.borderWidth = 2;
+    view.layer.borderWidth = 1;
   }
 }
 
