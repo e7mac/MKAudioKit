@@ -36,12 +36,18 @@ void MyInterruptionListener (void *inUserData,
     case kAudioSessionEndInterruption:
       // TODO: doesn't work!
     {
-      CheckError(AudioSessionSetActive(true),
-                 "Couldn't set audio session active");
+      NSError *error = nil;
+      if ( ![[AVAudioSession sharedInstance] setActive:YES error:&error]) {
+        NSLog(@"Couldn't set audio session active: %@", error);
+      }
+
       CheckError (AudioOutputUnitStart (audioController.audioState.rioUnit),
                   "Couldn't start RIO unit");
-      UInt32 allowMixing = YES;
-      AudioSessionSetProperty(kAudioSessionProperty_OverrideCategoryMixWithOthers, sizeof (allowMixing), &allowMixing);
+      NSString *category = AVAudioSessionCategoryPlayAndRecord;
+      AVAudioSessionCategoryOptions options = AVAudioSessionCategoryOptionMixWithOthers;
+      if ( ![[AVAudioSession sharedInstance] setCategory:category withOptions:options error:&error] ) {
+        NSLog(@"Couldn't set audio session category: %@", error);
+      }
     }
       break;
     default:
@@ -68,33 +74,27 @@ void audioRouteChangeListenerCallback (
   CFNumberGetValue (
                     routeChangeReasonRef, kCFNumberSInt32Type, &routeChangeReason
                     );
-  
+  BOOL success;
+  NSError *error;
   //headphones taken out
   if (routeChangeReason ==
       kAudioSessionRouteChangeReason_OldDeviceUnavailable) {  // 9
-    UInt32 audioRouteOverride = kAudioSessionOverrideAudioRoute_Speaker;  // 1
-    
-    AudioSessionSetProperty (
-                             kAudioSessionProperty_OverrideAudioRoute,                         // 2
-                             sizeof (audioRouteOverride),                                      // 3
-                             &audioRouteOverride                                               // 4
-                             );
-    
+    success = [[AVAudioSession sharedInstance] overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker
+                                         error:&error];
+    if (!success)  NSLog(@"AVAudioSession error overrideOutputAudioPort:%@",error);
   }
   //headphones plugged
   if (routeChangeReason ==
       kAudioSessionRouteChangeReason_NewDeviceAvailable) {  // 9
-    UInt32 audioRouteOverride = kAudioSessionOverrideAudioRoute_None;  // 1
-    
-    AudioSessionSetProperty (
-                             kAudioSessionProperty_OverrideAudioRoute,                         // 2
-                             sizeof (audioRouteOverride),                                      // 3
-                             &audioRouteOverride                                               // 4
-                             );
-    
+    success = [[AVAudioSession sharedInstance] overrideOutputAudioPort:AVAudioSessionPortOverrideNone
+                                                                 error:&error];
+    if (!success)  NSLog(@"AVAudioSession error overrideOutputAudioPort:%@",error);
   }
-  UInt32 allowMixing = YES;
-  AudioSessionSetProperty(kAudioSessionProperty_OverrideCategoryMixWithOthers, sizeof (allowMixing), &allowMixing);
+  NSString *category = AVAudioSessionCategoryPlayAndRecord;
+  AVAudioSessionCategoryOptions options = AVAudioSessionCategoryOptionMixWithOthers;
+  if ( ![[AVAudioSession sharedInstance] setCategory:category withOptions:options error:&error] ) {
+    NSLog(@"Couldn't set audio session category: %@", error);
+  }
 }
 
 OSStatus GranularSynthRenderCallback (
@@ -210,29 +210,25 @@ static NSMutableDictionary* instances = nil;
 
 -(void)setupAudioSessionRequestingSampleRate:(int)requestedSampleRate
 {
-  CheckError(AudioSessionInitialize(NULL,
-                                    kCFRunLoopDefaultMode,
-                                    MyInterruptionListener,
-                                    (__bridge void *)(self)),
-             "couldn't initialize audio session");
+  AVAudioSession *session = [AVAudioSession sharedInstance];
+  //error handling
+  BOOL success;
+  NSError* error;
   
-  UInt32 category = kAudioSessionCategory_PlayAndRecord;
-  CheckError(AudioSessionSetProperty(kAudioSessionProperty_AudioCategory,
-                                     sizeof(category),
-                                     &category),
-             "Couldn't set category on audio session");
+  //set the audioSession category.
+  //Needs to be Record or PlayAndRecord to use audioRouteOverride:
   
-  // route audio to bottom speaker for iphone
-  
+  NSString *category = AVAudioSessionCategoryPlayAndRecord;
+  AVAudioSessionCategoryOptions options = AVAudioSessionCategoryOptionMixWithOthers;
+  if ( ![[AVAudioSession sharedInstance] setCategory:category withOptions:options error:&error] ) {
+    NSLog(@"Couldn't set audio session category: %@", error);
+  }
   if ([[UIDevice currentDevice].model isEqualToString:@"iPhone"])
   {
-    UInt32 audioRouteOverride = kAudioSessionOverrideAudioRoute_Speaker;  // 1
-    
-    AudioSessionSetProperty (
-                             kAudioSessionProperty_OverrideAudioRoute,                         // 2
-                             sizeof (audioRouteOverride),                                      // 3
-                             &audioRouteOverride                                               // 4
-                             );
+    //set the audioSession override
+    success = [session overrideOutputAudioPort:AVAudioSessionPortOverrideSpeaker
+                                         error:&error];
+    if (!success)  NSLog(@"AVAudioSession error overrideOutputAudioPort:%@",error);
     
     
     AudioSessionPropertyID routeChangeID =
@@ -246,57 +242,17 @@ static NSMutableDictionary* instances = nil;
     
   }
   
-  Float32 preferredBufferDuration = 0.01;                      // 1
-  CheckError(AudioSessionSetProperty (                                     // 2
-                                      kAudioSessionProperty_PreferredHardwareIOBufferDuration,
-                                      sizeof (preferredBufferDuration),
-                                      &preferredBufferDuration
-                                      ),
-             "couldn't set buffer duration");
-  
-  
-  UInt32 allowMixing = YES;
-  AudioSessionSetProperty(kAudioSessionProperty_OverrideCategoryMixWithOthers, sizeof (allowMixing), &allowMixing);
-  
+  Float32 preferredBufferDuration = 0.01;
+  success = [session setPreferredIOBufferDuration:preferredBufferDuration error:&error];
+  if (!success)  NSLog(@"AVAudioSession error set buffer duration:%@",error);
+
   
   Float64 requestSampleRateStoredInVariable = (Float64)requestedSampleRate;
-  UInt32 propSize = sizeof (requestSampleRateStoredInVariable);
-  CheckError(AudioSessionSetProperty(kAudioSessionProperty_PreferredHardwareSampleRate,
-                                     propSize,
-                                     &requestSampleRateStoredInVariable),
-             "Couldn't set hardwareSampleRate");
+  success = [session setPreferredSampleRate:requestSampleRateStoredInVariable error:&error];
+  if (!success)  NSLog(@"AVAudioSession error set buffer duration:%@",error);
   
-  // is audio input available?
-  UInt32 ui32PropertySize = sizeof (UInt32);
-  UInt32 inputAvailable;
-  CheckError(AudioSessionGetProperty(kAudioSessionProperty_AudioInputAvailable,
-                                     &ui32PropertySize,
-                                     &inputAvailable),
-             "Couldn't get current audio input available prop");
-  if (! inputAvailable) {
-    UIAlertView *noInputAlert =
-    [[UIAlertView alloc] initWithTitle:@"No audio input"
-                               message:@"No audio input device is currently attached"
-                              delegate:nil
-                     cancelButtonTitle:@"OK"
-                     otherButtonTitles:nil];
-    [noInputAlert show];
-    // TODO: do we have to die? couldn't we tolerate an incoming connection
-    // TODO: need another example to show audio routes?
-  }
-  
-  // inspect the hardware input rate
-  
-  propSize = sizeof (_hardwareSampleRate);
-  CheckError(AudioSessionGetProperty(kAudioSessionProperty_CurrentHardwareSampleRate,
-                                     &propSize,
-                                     &_hardwareSampleRate),
-             "Couldn't get hardwareSampleRate");
+  _hardwareSampleRate = session.sampleRate;
   NSLog (@"hardwareSampleRate = %f", _hardwareSampleRate);
-  
-  //    NSAssert(hardwareSampleRate == SRATE, "sample rate 44100 not supported");
-  //	CheckError(AudioSessionSetActive(true),
-  //			   "Couldn't set AudioSession active");
   
   // describe unit
   AudioComponentDescription audioCompDesc;
@@ -338,7 +294,7 @@ static NSMutableDictionary* instances = nil;
   memset (&myASBD, 0, sizeof (myASBD));
   myASBD.mSampleRate = _hardwareSampleRate;
   myASBD.mFormatID = kAudioFormatLinearPCM;
-  myASBD.mFormatFlags = kAudioFormatFlagsCanonical;
+  myASBD.mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagsNativeEndian | kAudioFormatFlagIsPacked | kAudioFormatFlagIsNonInterleaved;
   myASBD.mBytesPerPacket = 4;
   myASBD.mFramesPerPacket = 1;
   myASBD.mBytesPerFrame = 4;
@@ -398,8 +354,6 @@ static NSMutableDictionary* instances = nil;
 {
   self.audiobusController = [[ABAudiobusController alloc]
                              initWithApiKey:apiKey];
-  UInt32 allowMixing = YES;
-  AudioSessionSetProperty(kAudioSessionProperty_OverrideCategoryMixWithOthers, sizeof (allowMixing), &allowMixing);
   if (outputDescription) {
     //add sender port
     _audioState.audiobusOutputPort = [[ABSenderPort alloc] initWithName:outputDescription[@"name"]
