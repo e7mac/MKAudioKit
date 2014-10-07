@@ -294,7 +294,7 @@ static NSMutableDictionary* instances = nil;
   memset (&myASBD, 0, sizeof (myASBD));
   myASBD.mSampleRate = _hardwareSampleRate;
   myASBD.mFormatID = kAudioFormatLinearPCM;
-  myASBD.mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagsNativeEndian | kAudioFormatFlagIsPacked | kAudioFormatFlagIsNonInterleaved;
+  myASBD.mFormatFlags = kAudioFormatFlagsCanonical;
   myASBD.mBytesPerPacket = 4;
   myASBD.mFramesPerPacket = 1;
   myASBD.mBytesPerFrame = 4;
