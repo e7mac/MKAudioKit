@@ -13,10 +13,15 @@
 @interface MKKeyboardView()
 
 @property (strong, nonatomic) NSMutableDictionary *pitchForTouch;
+@property (strong, nonatomic) NSArray *blackKeys;
 
 @end
 
-@implementation MKKeyboardView
+@implementation MKKeyboardView {
+  CGFloat whiteKeyWidth;
+  CGFloat blackKeyWidth;
+  CGFloat blackKeyHeight;
+}
 
 - (id)initWithFrame:(CGRect)frame
 {
@@ -34,6 +39,15 @@
     [self commonInit];
   }
   return self;
+}
+
+- (NSArray *)blackKeys
+{
+  if (_blackKeys == nil)
+  {
+    _blackKeys = [[NSArray alloc] init];
+  }
+  return _blackKeys;
 }
 
 - (NSMutableDictionary *)pitchForTouch
@@ -79,9 +93,10 @@
     int currentPitch = self.startPitch + i;
     whiteKeys += ![self blackKeyForPitch:currentPitch];
   }
-  CGFloat whiteKeyWidth = self.bounds.size.width / whiteKeys;
-  CGFloat blackKeyWidth = 0.5 * whiteKeyWidth;
-  CGFloat blackKeyHeight = self.bounds.size.height*0.6;
+  NSMutableArray *blackKeys = [@[] mutableCopy];
+  whiteKeyWidth = self.bounds.size.width / whiteKeys;
+  blackKeyWidth = 0.5 * whiteKeyWidth;
+  blackKeyHeight = self.bounds.size.height*0.6;
   CGFloat startX = 0;
   for (int i=0; i<self.numPitches; i++) {
     int currentPitch = self.startPitch + i;
@@ -99,12 +114,17 @@
       view.pressed = YES;
     } else {
       //add black key
+      if (self.continousMode) {
+        view.frame = CGRectMake(startX - (0.25)*whiteKeyWidth, 0, blackKeyWidth, self.bounds.size.height);
+      } else {
       view.frame = CGRectMake(startX - (0.25)*whiteKeyWidth, 0, blackKeyWidth, blackKeyHeight);
+      }
       view.layer.cornerRadius = blackKeyWidth/4;
       view.layer.shadowRadius = 2;
       view.layer.shadowRadius = 7;
       view.layer.shadowOpacity = 0.75;
       [self addSubview:view];
+      [blackKeys addObject:view];
       view.backgroundColor = [UIColor blackColor];
     }
     view.tag = currentPitch;
@@ -112,6 +132,7 @@
     view.layer.borderColor = [[UIColor blackColor] CGColor];
     view.layer.borderWidth = 1;
   }
+  self.blackKeys = blackKeys;
 }
 
 -(BOOL)blackKeyForPitch:(int)pitch
@@ -229,8 +250,9 @@
   if (self.continousMode) {
     CGPoint point = [touch locationInView:touchedView];
     float fractionalPitch = point.x / touchedView.bounds.size.width;
-    pitch += fractionalPitch;
+    pitch += fractionalPitch - 0.5;
   }
+  NSLog(@"%f", pitch);
   return pitch;
 }
 
@@ -241,6 +263,12 @@
   CGPoint point = [touch locationInView:touchedView];
   float fractionalPitch = point.y / touchedView.bounds.size.height;
   return fractionalPitch;
+}
+
+-(void)setContinousMode:(BOOL)continousMode
+{
+  _continousMode = continousMode;
+  [self constructKeyboardView];
 }
 
 @end

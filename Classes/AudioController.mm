@@ -7,6 +7,7 @@
 //
 
 #import "AudioController.h"
+static void * kAudiobusRunningOrConnectedChanged = &kAudiobusRunningOrConnectedChanged;
 
 void CheckError(OSStatus error, const char *operation)
 {
@@ -116,15 +117,6 @@ OSStatus GranularSynthRenderCallback (
                                inNumberFrames,
                                ioData),
 			   "Couldn't render from RemoteIO unit");
-	// walk the samples
-    if ( audioState->hasFilterPort ) {
-        if ( ABFilterPortIsConnected(audioState->filterPort)) {
-            // Pull output audio from the filter port
-            // Note: The following line isn't necessary if you're using the Audio Unit Wrapper - it'll do this for you.
-            ABFilterPortGetOutput(audioState->filterPort, ioData, inNumberFrames, NULL);
-            return noErr;
-        }
-    }
     audioState->processBlock(ioData, inNumberFrames, NULL);
 	return noErr;
 }
@@ -158,8 +150,33 @@ static NSMutableDictionary* instances = nil;
     self = [super init];
     if (self) {
         _running = NO;
+      // Watch the audiobusAppRunning and connected properties
+      [_audiobusController addObserver:self
+                            forKeyPath:@"connected"
+                               options:0
+                               context:kAudiobusRunningOrConnectedChanged];
+      [_audiobusController addObserver:self
+                            forKeyPath:@"audiobusAppRunning"
+                               options:0
+                               context:kAudiobusRunningOrConnectedChanged];
     }
     return self;
+}
+
+-(void)observeValueForKeyPath:(NSString *)keyPath
+                     ofObject:(id)object
+                       change:(NSDictionary *)change
+                      context:(void *)context {
+  if ( context == kAudiobusRunningOrConnectedChanged ) {
+    if ( [UIApplication sharedApplication].applicationState == UIApplicationStateBackground
+        && !_audiobusController.connected
+        && !_audiobusController.audiobusAppRunning ) {
+      // Audiobus has quit. Time to sleep.
+      [self stop];
+    }
+  } else {
+    [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+  }
 }
 
 
@@ -377,31 +394,43 @@ static NSMutableDictionary* instances = nil;
 }
 
 #pragma mark Audiobus things
--(void)setupAudiobusLaunchUrl:(NSURL *)launchUrl WithKey:(NSString *)apiKey withFilterPort:(BOOL)hasFilterPort
+-(void)setupAudiobusWithKey:(NSString *)apiKey withOutputPort:(NSDictionary *)outputDescription outputPortDescription:(AudioComponentDescription)outputPortDescription filterPort:(NSDictionary *)filterDescription filterPortDescription:(AudioComponentDescription)filterPortDescription
 {
     self.audiobusController = [[ABAudiobusController alloc]
-                               initWithAppLaunchURL:launchUrl
-                               apiKey:apiKey];
-    
-    self.audiobusAudioUnitWrapper = [[ABAudiobusAudioUnitWrapper alloc]
-                                     initWithAudiobusController:self.audiobusController
-                                     audioUnit:self.audioState.rioUnit
-                                     output:[self.audiobusController addOutputPortNamed:@"Audio Output"
-                                                                                  title:NSLocalizedString(@"Main App Output", @"")]
-                                     input:nil];
-    self.audiobusAudioUnitWrapper.useLowLatencyInputStream = YES;
+                               initWithApiKey:apiKey];
     UInt32 allowMixing = YES;
     AudioSessionSetProperty(kAudioSessionProperty_OverrideCategoryMixWithOthers, sizeof (allowMixing), &allowMixing);
-    
-    _audioState.hasFilterPort = hasFilterPort;
-    if (hasFilterPort) {
+  if (outputDescription) {
+   //add sender port
+    _audioState.audiobusOutputPort = [[ABSenderPort alloc] initWithName:outputDescription[@"name"]
+                                                                  title:outputDescription[@"title"]
+                                              audioComponentDescription:outputPortDescription
+                                                              audioUnit:_audioState.rioUnit];
+    [_audiobusController addSenderPort:_audioState.audiobusOutputPort];
+//    _audioState.audiobusOutputPort = [[ABSenderPort alloc] initWithName:@"grainproc"
+//                                                                  title:NSLocalizedString(@"Main App Output", @"")
+//                                              audioComponentDescription:(AudioComponentDescription) {
+//                                                .componentType = kAudioUnitType_RemoteGenerator,
+//                                                .componentSubType = 'gprg', // Note single quotes
+//                                                .componentManufacturer = 'emac' }
+//                                                              audioUnit:_audioState.rioUnit];
+//    [_audiobusController addSenderPort:_audioState.audiobusOutputPort];
+  }
+    if (filterDescription) {
         // In app initialisation...
-        _audioState.filterPort = [_audiobusController addFilterPortNamed:@"Main"
-                                                                    title:@"Main Filter"
-                                                             processBlock:processBlock];
-        _audioState.filterPort.clientFormat = self.audioState.asbd;
+      _audioState.filterPort = [[ABFilterPort alloc] initWithName:filterDescription[@"name"]
+                                                            title:filterDescription[@"title"]
+                                        audioComponentDescription:filterPortDescription
+                                                        audioUnit:_audioState.rioUnit];
+//      _audioState.filterPort = [[ABFilterPort alloc] initWithName:@"grainproc.filter"
+//                                                            title:@"Granular effect"
+//                                        audioComponentDescription:(AudioComponentDescription) {
+//                                          .componentType = kAudioUnitType_RemoteEffect,
+//                                          .componentSubType = 'gprx',
+//                                          .componentManufacturer = 'emac' }
+//                                                        audioUnit:_audioState.rioUnit];
+      [_audiobusController addFilterPort:_audioState.filterPort];
     }
-    
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(connectionsChanged:) name:ABConnectionsChangedNotification object:nil];
     
 }
