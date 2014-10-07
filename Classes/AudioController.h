@@ -12,13 +12,13 @@
 #import <AVFoundation/AVFoundation.h>
 
 typedef struct {
-	AudioUnit rioUnit;
-	AudioStreamBasicDescription asbd;
-    ABFilterPort *filterPort;
-    ABSenderPort *audiobusOutputPort;
-    BOOL audioSetupDone;
-    BOOL hasFilterPort;
-    __block void (^processBlock)(AudioBufferList* ioData, UInt32 inNumberFrames, AudioTimeStamp *timestamp);
+  AudioUnit rioUnit;
+  AudioStreamBasicDescription asbd;
+  ABFilterPort *filterPort;
+  ABSenderPort *audiobusOutputPort;
+  BOOL audioSetupDone;
+  BOOL hasFilterPort;
+  __block void (^processBlock)(AudioBufferList* ioData, UInt32 inNumberFrames, AudioTimeStamp *timestamp);
 } AudioState;
 
 @interface AudioController: NSObject
