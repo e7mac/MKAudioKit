@@ -36,7 +36,6 @@ void MyInterruptionListener (void *inUserData,
     case kAudioSessionEndInterruption:
       // TODO: doesn't work!
     {
-      [[AVAudioSession sharedInstance] setActive:YES error:nil];
       CheckError(AudioSessionSetActive(true),
                  "Couldn't set audio session active");
       CheckError (AudioOutputUnitStart (audioController.audioState.rioUnit),
