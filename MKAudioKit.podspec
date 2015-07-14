@@ -15,11 +15,6 @@ Pod::Spec.new do |s|
   # s.resources = 'Assets/**/*'
   s.frameworks    = 'QuartzCore', 'AudioToolbox', 'Accelerate', 'AVFoundation'
 
-  s.subspec 'Audiobus' do |audiobus|
-      version = '2.1.5'
-      audiobus.source_files = 'libraries/audiobus/' + version + '/include/*.h'
-      audiobus.vendored_libraries = 'libraries/audiobus/' + version + '/lib/libAudiobus.a'
-      audiobus.xcconfig = { 'HEADER_SEARCH_PATHS' => "${PODS_ROOT}/libraries/audiobus/' + version + '/include/**" }
-  end
-
+  s.dependency 'Audiobus'
+  
 end
