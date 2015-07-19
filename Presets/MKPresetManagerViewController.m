@@ -14,7 +14,7 @@
 
 @interface MKPresetManagerViewController () <UICollectionViewDataSource, UICollectionViewDelegate>
 @property (weak, nonatomic) IBOutlet UICollectionView *communityPatchesCollectionView;
-@property (weak, nonatomic) IBOutlet UICollectionView *myPatchesCollectionView;
+@property (unsafe_unretained, nonatomic) IBOutlet UICollectionView *myPatchesCollectionView;
 @property (strong, nonatomic) NSArray *myPatches;
 @property (strong, nonatomic) NSArray *communityPatches;
 @property (weak, nonatomic) UICollectionView *selectedCollectionView;
@@ -22,7 +22,8 @@
 @property (strong, nonatomic) NSDictionary *selectedPreset;
 @property (assign, nonatomic) BOOL saveNew;
 @property (strong, nonatomic) STAlertView *alertView;
-@property (weak, nonatomic) IBOutlet UIButton *nameTextButton;
+@property (unsafe_unretained, nonatomic) IBOutlet UIButton *nameTextButton;
+@property (unsafe_unretained, nonatomic) IBOutlet UIView *tapView;
 
 @end
 
@@ -32,6 +33,8 @@
   [super viewDidLoad];
   
 //  self.view.backgroundColor = [UIColor colorWithWhite:56/255. alpha:0.8];
+  UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(doneButtonPressed:)];
+  [self.tapView addGestureRecognizer:tap];
   
   if ([[NSUserDefaults standardUserDefaults] objectForKey:@"authorName"]) {
     [self.nameTextButton setTitle:[NSString stringWithFormat:@"%@'s Patches", [[NSUserDefaults standardUserDefaults] objectForKey:@"authorName"]] forState:UIControlStateNormal];
@@ -272,4 +275,5 @@
                                        }
                                      }] show];
 }
+
 @end

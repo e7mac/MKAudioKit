@@ -15,11 +15,10 @@
 @end
 
 @interface MKPresetManagerViewController : UIViewController
-
-@property (weak, nonatomic) IBOutlet UIButton *loadButton;
-@property (weak, nonatomic) IBOutlet UIButton *saveButton;
-@property (weak, nonatomic) IBOutlet UIButton *deleteButton;
-@property (weak, nonatomic) IBOutlet UIButton *transferButton;
+@property (unsafe_unretained, nonatomic) IBOutlet UIButton *loadButton;
+@property (unsafe_unretained, nonatomic) IBOutlet UIButton *saveButton;
+@property (unsafe_unretained, nonatomic) IBOutlet UIButton *deleteButton;
+@property (unsafe_unretained, nonatomic) IBOutlet UIButton *transferButton;
 
 @property (strong, nonatomic) NSDictionary *currentPreset;
 
