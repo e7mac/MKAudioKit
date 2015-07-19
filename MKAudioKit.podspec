@@ -8,12 +8,19 @@ Pod::Spec.new do |s|
   s.source           = { :git => "https://github.com/e7mac/MKAudioKit.git", :tag => s.version.to_s }
   s.social_media_url = 'https://twitter.com/e7mac'
 
-  s.platform     = :ios, '5.0'
+  s.platform     = :ios, '7.0'
   s.requires_arc = true
 
-  s.source_files = 'Classes/**/*'
-  # s.resources = 'Assets/**/*'
-  s.frameworks    = 'QuartzCore', 'AudioToolbox', 'Accelerate', 'AVFoundation'
+
+  subspecs = ['AudioController', 'Presets', 'Interaction']
+
+  subspecs.each do |subspec|
+    s.subspec subspec do |ss|
+      ss.source_files = subspec + '/*'
+      ss.resources = subspec + '/{assets,images,fonts,UI,audio}/*'
+      s.frameworks    = 'QuartzCore', 'AudioToolbox', 'Accelerate', 'AVFoundation'
+    end
+  end
 
   s.dependency 'Audiobus'
   
