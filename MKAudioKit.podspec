@@ -23,5 +23,5 @@ Pod::Spec.new do |s|
   end
 
   s.dependency 'Audiobus'
-  
+  s.dependency 'STAlertView'
 end
