@@ -25,4 +25,6 @@ Pod::Spec.new do |s|
   s.dependency 'Audiobus'
   s.dependency 'STAlertView'
   s.dependency 'Parse'
+  s.dependency 'iRate'
+  s.dependency 'SVProgressHUD'
 end

@@ -11,6 +11,8 @@
 #import "MKPresetManagerViewControllerCell.h"
 #import <QuartzCore/QuartzCore.h>
 #import <STAlertView.h>
+#import <iRate.h>
+#import <SVProgressHUD.h>
 
 @interface MKPresetManagerViewController () <UICollectionViewDataSource, UICollectionViewDelegate>
 @property (weak, nonatomic) IBOutlet UICollectionView *communityPatchesCollectionView;
@@ -199,6 +201,7 @@
                                             self.selectedCollectionView = nil;
                                             self.selectedIndexPath = nil;
                                             [self setButtonsToInitialState];
+                                            [[iRate sharedInstance] logEvent:NO];                                            
                                           }
                                         }] show];
   } else {
@@ -232,19 +235,17 @@
 {
   [MKPresetManager savePreset:self.selectedPreset];
   [self refreshPatches];
+  [SVProgressHUD showSuccessWithStatus:@"Saved!"];
 }
 
 -(void)uploadPatch
 {
   NSDictionary *preset = self.selectedPreset;
-  NSString *name = [[NSUserDefaults standardUserDefaults] objectForKey:@"authorName"];
-  if (!name) name = @"";
-  //    if (!preset.author || !preset.author.length) preset.author = name;
-  //    [SVProgressHUD showWithStatus:@"Uploading..."];
+  [SVProgressHUD showWithStatus:@"Uploading..."];
   [MKPresetManager saveToCloudPreset:preset withCompletion:^{
     dispatch_async(dispatch_get_main_queue(), ^{
       [self refreshPatches];
-      //        [SVProgressHUD showSuccessWithStatus:@"Uploaded!"];
+      [SVProgressHUD showSuccessWithStatus:@"Uploaded!"];
     });
   }];
 }
