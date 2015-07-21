@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
   s.requires_arc = true
 
 
-  subspecs = ['AudioController', 'Presets', 'Interaction']
+  subspecs = ['AudioController', 'Presets', 'Interaction', 'MIDI']
 
   subspecs.each do |subspec|
     s.subspec subspec do |ss|
@@ -27,4 +27,5 @@ Pod::Spec.new do |s|
   s.dependency 'Parse'
   s.dependency 'iRate'
   s.dependency 'SVProgressHUD'
+  s.dependency 'MIKMIDI'
 end
