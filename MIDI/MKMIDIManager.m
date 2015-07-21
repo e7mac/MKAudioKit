@@ -9,6 +9,13 @@
 #import "MKMIDIManager.h"
 #import <MIKMIDI.h>
 
+@interface MKMIDIManager()
+
+@property (strong, nonatomic) NSArray *connectionTokens;
+@property (strong, nonatomic) NSArray *connections;
+
+@end
+
 @implementation MKMIDIManager
 
 static MKMIDIManager *sharedInstance;
@@ -25,13 +32,36 @@ static MKMIDIManager *sharedInstance;
 {
   self = [super init];
   if (self) {
-    [self refreshMIDIConnections];
+    [self refreshMIDIConnections];    
+    [[MIKMIDIDeviceManager sharedDeviceManager] addObserver:self forKeyPath:@"availableDevices" options:NSKeyValueObservingOptionNew context:nil];
   }
   return self;
 }
 
+-(void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
+{
+  if (object == [MIKMIDIDeviceManager sharedDeviceManager]) {
+    [self removeAllMIDIConnections];
+    [self refreshMIDIConnections];
+  }
+}
+
+-(void)removeAllMIDIConnections
+{
+  NSArray *connectionTokens = self.connectionTokens;
+  NSArray *connections = self.connections;
+  for (int i=0;i<connections.count;i++) {
+    MIKMIDIDeviceManager *manager = [MIKMIDIDeviceManager sharedDeviceManager];
+    [manager disconnectInput:connections[i] forConnectionToken:connectionTokens[i]];
+  }
+  self.connections = @[];
+  self.connectionTokens = @[];
+}
+
 -(void)refreshMIDIConnections
 {
+  NSMutableArray *connectionTokens = [@[] mutableCopy];
+  NSMutableArray *connections = [@[] mutableCopy];
   for (MIKMIDIDevice *device in [[MIKMIDIDeviceManager sharedDeviceManager] availableDevices]) {
     NSArray *sources = [device.entities valueForKeyPath:@"@unionOfArrays.sources"];
     MIKMIDISourceEndpoint *source = [sources firstObject]; // Or whichever source you want, but often there's only one.
@@ -40,7 +70,7 @@ static MKMIDIManager *sharedInstance;
     
     NSError *error = nil;
     
-    BOOL success = [manager connectInput:source error:&error eventHandler:^(MIKMIDISourceEndpoint *source, NSArray *commands) {
+    id token = [manager connectInput:source error:&error eventHandler:^(MIKMIDISourceEndpoint *source, NSArray *commands) {
       for (MIKMIDICommand *command in commands) {
         switch (command.commandType) {
           case MIKMIDICommandTypeNoteOn: {
@@ -64,10 +94,15 @@ static MKMIDIManager *sharedInstance;
         }
       }
     }];
-    if (!success) {
-      //      [[[UIAlertView alloc] initWithTitle:@"error" message:[error description] delegate:nil cancelButtonTitle:nil otherButtonTitles:@"Ok", nil] show];
+    if (token) {
+      [connectionTokens addObject:token];
+      [connections addObject:source];
+    } else {
+      //error connecting
     }
   }
+  self.connectionTokens = connectionTokens;
+  self.connections = connections;
 }
 
 @end
