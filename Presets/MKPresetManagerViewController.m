@@ -13,6 +13,7 @@
 #import <STAlertView.h>
 #import <iRate.h>
 #import <SVProgressHUD.h>
+#import <MSAnalytics.h>
 
 @interface MKPresetManagerViewController () <UICollectionViewDataSource, UICollectionViewDelegate>
 @property (weak, nonatomic) IBOutlet UICollectionView *communityPatchesCollectionView;
@@ -167,11 +168,13 @@
     }
     [self.transferButton setTitle:@"UPLOAD" forState:UIControlStateNormal];
     [self.transferButton addTarget:self action:@selector(uploadPatch) forControlEvents:UIControlEventTouchUpInside];
+    [MSAnalytics track:@"Preset Select" properties:@{@"source":@"personal"}];
   }
   if (collectionView == self.communityPatchesCollectionView) {
     self.selectedPreset = self.communityPatches[indexPath.row];
     [self.transferButton setTitle:@"DOWNLOAD" forState:UIControlStateNormal];
     [self.transferButton addTarget:self action:@selector(downloadPatch) forControlEvents:UIControlEventTouchUpInside];
+    [MSAnalytics track:@"Preset Select" properties:@{@"source":@"community"}];    
   }
   [self.myPatchesCollectionView reloadData];
   [self.communityPatchesCollectionView reloadData];
@@ -180,6 +183,7 @@
 
 -(void)savePressed
 {
+  [MSAnalytics track:@"Preset Save"];
   if (self.saveNew) {
     self.alertView = [[[STAlertView alloc] initWithTitle:@"Preset Name"
                                                   message:@"Please name your Preset"
@@ -215,6 +219,7 @@
 
 -(void)loadPressed
 {
+  [MSAnalytics track:@"Preset Load"];
   NSDictionary *preset = self.selectedPreset;
   if ([self.delegate respondsToSelector:@selector(loadPreset:)]) {
     [self.delegate loadPreset:preset];
@@ -223,6 +228,7 @@
 
 -(void)deletePressed
 {
+  [MSAnalytics track:@"Preset delete"];
   [MKPresetManager deletePresetWithName:self.selectedPreset[@"name"]];
   self.selectedPreset = nil;
   self.selectedCollectionView = nil;
@@ -233,6 +239,7 @@
 
 -(void)downloadPatch
 {
+  [MSAnalytics track:@"Preset Download"];
   [MKPresetManager savePreset:self.selectedPreset];
   [self refreshPatches];
   [SVProgressHUD showSuccessWithStatus:@"Saved!"];
@@ -240,6 +247,7 @@
 
 -(void)uploadPatch
 {
+  [MSAnalytics track:@"Preset Upload"];
   NSDictionary *preset = self.selectedPreset;
   [SVProgressHUD showWithStatus:@"Uploading..."];
   [MKPresetManager saveToCloudPreset:preset withCompletion:^{
