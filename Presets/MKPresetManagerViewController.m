@@ -13,7 +13,7 @@
 #import <STAlertView.h>
 #import <iRate.h>
 #import <SVProgressHUD.h>
-#import <MSAnalytics.h>
+#import "MSAnalytics.h"
 
 @interface MKPresetManagerViewController () <UICollectionViewDataSource, UICollectionViewDelegate>
 @property (weak, nonatomic) IBOutlet UICollectionView *communityPatchesCollectionView;

@@ -8,6 +8,7 @@
 
 #import "MKPresetManager.h"
 #import <Parse.h>
+#import <Firebase/Firebase.h>
 
 @implementation MKPresetManager
 
@@ -73,43 +74,22 @@
 
 +(void)saveToCloudPreset:(NSDictionary *)preset withCompletion:(void (^)())completion
 {
-  PFObject *testObject = [PFObject objectWithClassName:@"GrainProcPreset"];
-  NSDictionary *d = preset;
-  for (NSString *key in d.allKeys) {
-    NSString *value = d[key];
-    [testObject setObject:value forKey:key];
+  NSArray *presets = [[NSUserDefaults standardUserDefaults] valueForKey:@"presets"];
+  FIRDatabaseReference *db = [[FIRDatabase database] referenceWithPath:@"presets"];
+  [[db childByAutoId] setValue:preset];
+  if (completion) {
+    completion();
   }
-  [testObject saveInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
-    if (succeeded) {
-      NSLog(@"yes");
-      if (completion) {
-        completion();
-      }
-    } else {
-      NSLog([error description]);
-    }
-  }];
 }
 
 +(void)loadAllPresetsFromCloudWithCompletion:(void (^)(NSArray *presets))completion;
 {
-  PFQuery *q = [PFQuery queryWithClassName:@"GrainProcPreset"];
-  [q findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
-    NSMutableArray *ds = [@[] mutableCopy];
-    for (PFObject *object in objects) {
-      NSMutableDictionary *d = [@{} mutableCopy];
-      for (NSString *key in object.allKeys) {
-        d[key] = object[key];
-      }
-      [ds addObject:d];
-    }
-    NSMutableArray *presets = [@[] mutableCopy];
-    for (NSDictionary *d in ds) {
-      NSDictionary *preset = d;
-      [presets addObject:preset];
-    }
+  FIRDatabaseReference *db = [[FIRDatabase database] referenceWithPath:@"presets"];
+  
+  [db observeEventType:FIRDataEventTypeValue withBlock:^(FIRDataSnapshot * _Nonnull snapshot) {
+    NSArray *objects = [snapshot.value allValues];
     if (completion) {
-      completion(presets);
+      completion(objects);
     }
   }];
 }
