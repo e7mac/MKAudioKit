@@ -7,7 +7,6 @@
 //
 
 #import "MKPresetManager.h"
-#import <Parse.h>
 #import <Firebase/Firebase.h>
 
 @implementation MKPresetManager
@@ -74,7 +73,6 @@
 
 +(void)saveToCloudPreset:(NSDictionary *)preset withCompletion:(void (^)())completion
 {
-  NSArray *presets = [[NSUserDefaults standardUserDefaults] valueForKey:@"presets"];
   FIRDatabaseReference *db = [[FIRDatabase database] referenceWithPath:@"presets"];
   [[db childByAutoId] setValue:preset];
   if (completion) {
@@ -85,7 +83,6 @@
 +(void)loadAllPresetsFromCloudWithCompletion:(void (^)(NSArray *presets))completion;
 {
   FIRDatabaseReference *db = [[FIRDatabase database] referenceWithPath:@"presets"];
-  
   [db observeEventType:FIRDataEventTypeValue withBlock:^(FIRDataSnapshot * _Nonnull snapshot) {
     NSArray *objects = [snapshot.value allValues];
     if (completion) {

@@ -7,6 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <MSAnalytics.h>
 
 @protocol MKPresetManagerViewControllerDelegate <NSObject>
 
@@ -21,6 +22,7 @@
 @property (unsafe_unretained, nonatomic) IBOutlet UIButton *transferButton;
 
 @property (strong, nonatomic) NSDictionary *currentPreset;
+@property (weak, nonatomic) id<MSAnalytics> analytics;
 
 @property (weak, nonatomic) id<MKPresetManagerViewControllerDelegate> delegate;
 
